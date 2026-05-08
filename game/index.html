@@ -3,104 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Arcade Launcher</title>
+    <title>Ultimate Game Arcade</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        :root {
+            --primary-glow: #3b82f6;
+            --bg-dark: #0f172a;
+        }
+
         body {
-            background: radial-gradient(circle at center, #1a1a2e 0%, #16213e 100%);
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             margin: 0;
-            overflow: hidden;
+            overflow-y: auto; /* Ensure scrollable */
+            scroll-behavior: smooth;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 10px;
         }
 
         .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 24px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.05),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        .glass-card:hover::before {
+            left: 100%;
         }
 
         .glass-card:hover {
-            transform: translateY(-10px);
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.3);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            transform: scale(1.03) translateY(-5px);
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+            background: rgba(255, 255, 255, 0.07);
         }
 
-        .icon-container {
-            font-size: 4rem;
-            margin-bottom: 1rem;
+        .fruit-badge {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        .glow-text {
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
-        }
-
-        /* Floating Animation */
         @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0px); }
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
         }
 
-        .floating {
-            animation: float 4s ease-in-out infinite;
+        .float-icon {
+            animation: float 5s ease-in-out infinite;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
         }
+
+        .hero-text {
+            background: linear-gradient(to bottom right, #fff 30%, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Active Fruit Theme Styles */
+        .theme-godly { --primary-glow: #fde047; }
+        .theme-very-bad { --primary-glow: #ef4444; }
     </style>
 </head>
-<body>
+<body class="py-12 px-4">
 
-    <div class="container max-w-4xl px-6 text-center">
-        <header class="mb-12">
-            <h1 class="text-5xl font-bold mb-4 glow-text">Game Arcade</h1>
-            <p class="text-blue-300 text-lg opacity-80">Choose your challenge for today</p>
+    <!-- Top Fruit Power-Up Selector (Personalized) -->
+    <div class="max-w-6xl mx-auto mb-10 flex flex-col items-center">
+        <p class="text-xs text-blue-400 font-bold mb-3 uppercase tracking-widest">Select Your Fruit Power-Up</p>
+        <div class="flex gap-4 flex-wrap justify-center">
+            <button onclick="setTheme('godly')" class="px-4 py-2 rounded-full border border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/30 transition-all text-sm">
+                🐉 Dragon West (Godly)
+            </button>
+            <button onclick="setTheme('mid')" class="px-4 py-2 rounded-full border border-blue-500/50 bg-blue-500/10 hover:bg-blue-500/30 transition-all text-sm">
+                🦊 Kitsune (Legendary)
+            </button>
+            <button onclick="setTheme('bad')" class="px-4 py-2 rounded-full border border-red-500/50 bg-red-500/10 hover:bg-red-500/30 transition-all text-sm">
+                🚀 Rocket (Very Bad)
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+        <header class="text-center mb-16">
+            <h1 class="text-6xl md:text-7xl font-black mb-4 hero-text tracking-tight">GAME ARCADE</h1>
+            <p class="text-xl text-slate-400 max-w-2xl mx-auto">
+                Welcome back, Champion. Level up your skills with our premium selection of classic challenges.
+            </p>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Solitaire Card -->
-            <div onclick="navigateTo('solitaire.html')" class="glass-card p-10 flex flex-col items-center">
-                <div class="icon-container floating">🃏</div>
-                <h2 class="text-3xl font-semibold mb-2">Solitaire</h2>
-                <p class="text-gray-400 mb-6">Master the deck and clear the board in this classic card game.</p>
-                <span class="inline-block bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-full transition-colors">
-                    Launch Game
-                </span>
+        <!-- Main Grid - Now with more cards and better spacing -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <!-- Chess Card -->
+            <div onclick="launchGame('Chess')" class="glass-card group p-8 cursor-pointer">
+                <div class="fruit-badge mb-4 inline-block text-blue-400">Logic Class</div>
+                <div class="text-6xl mb-6 float-icon">♟️</div>
+                <h3 class="text-2xl font-bold mb-2 group-hover:text-blue-400 transition-colors">Grandmaster Chess</h3>
+                <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                    Outmaneuver the competition. A game of pure strategy where every move determines your destiny.
+                </p>
+                <div class="flex items-center text-blue-500 font-bold text-sm uppercase tracking-wider">
+                    Start Session 
+                    <svg class="w-4 h-4 ml-2 transition-transform group-hover:translate-x-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </div>
             </div>
 
-            <!-- Chess Card -->
-            <div onclick="navigateTo('chess.html')" class="glass-card p-10 flex flex-col items-center">
-                <div class="icon-container floating" style="animation-delay: 1s;">♟️</div>
-                <h2 class="text-3xl font-semibold mb-2">Chess</h2>
-                <p class="text-gray-400 mb-6">Strategic warfare on 64 squares. Outsmart your opponent.</p>
-                <span class="inline-block bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-8 rounded-full transition-colors">
-                    Launch Game
-                </span>
+            <!-- Solitaire Card -->
+            <div onclick="launchGame('Solitaire')" class="glass-card group p-8 cursor-pointer" style="animation-delay: 0.2s;">
+                <div class="fruit-badge mb-4 inline-block text-purple-400">Patience Class</div>
+                <div class="text-6xl mb-6 float-icon" style="animation-delay: 1s;">🃏</div>
+                <h3 class="text-2xl font-bold mb-2 group-hover:text-purple-400 transition-colors">Classic Solitaire</h3>
+                <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                    Master the deck. Sort the suits and find the perfect order in this timeless card classic.
+                </p>
+                <div class="flex items-center text-purple-500 font-bold text-sm uppercase tracking-wider">
+                    Play Now
+                    <svg class="w-4 h-4 ml-2 transition-transform group-hover:translate-x-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </div>
             </div>
+
+            <!-- Tic Tac Toe Card -->
+            <div onclick="launchGame('ttt')" class="glass-card group p-8 cursor-pointer" style="animation-delay: 0.4s;">
+                <div class="fruit-badge mb-4 inline-block text-green-400">Quick-Reflex</div>
+                <div class="text-6xl mb-6 float-icon" style="animation-delay: 2s;">❌</div>
+                <h3 class="text-2xl font-bold mb-2 group-hover:text-green-400 transition-colors">Elite Tic-Tac-Toe</h3>
+                <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                    Three in a row wins. Quick, tactical matches to prove your dominance in the grid.
+                </p>
+                <div class="flex items-center text-green-500 font-bold text-sm uppercase tracking-wider">
+                    Enter Arena
+                    <svg class="w-4 h-4 ml-2 transition-transform group-hover:translate-x-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </div>
+            </div>
+            <!--Rock paper scissors card-->
+            <div onclick="launchGame('rps')" class="glass-card group p-8 cursor-pointer" style="animation-delay: 0.6s;">
+                <div class="fruit-badge mb-4 inline-block text-yellow-400">Strategy</div>
+                <div class="text-6xl mb-6 float-icon" style="animation-delay: 3s;">✊</div>
+                <h3 class="text-2xl font-bold mb-2 group-hover:text-yellow-400 transition-colors">Fruit Rock Paper Scissors</h3>
+                <p class="text-slate-400 text-sm leading-relaxed mb-6">
+                    Choose your fruit wisely. The ultimate battle of strategy and luck!
+                </p>
+                <div class="flex items-center text-yellow-500 font-bold text-sm uppercase tracking-wider">
+                    Play Now
+                    <svg class="w-4 h-4 ml-2 transition-transform group-hover:translate-x-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </div>
+            </div>
+
+            <!-- Coming Soon Card -->
+            <div class="glass-card p-8 opacity-60 border-dashed">
+                <div class="fruit-badge mb-4 inline-block text-slate-500">Locked</div>
+                <div class="text-6xl mb-6 grayscale">🎮</div>
+                <h3 class="text-2xl font-bold mb-2">More Soon...</h3>
+                <p class="text-slate-500 text-sm mb-6">Our developers are crafting new fruit-powered experiences for your next session.</p>
+                <div class="text-slate-500 font-bold text-sm uppercase">Coming Soon</div>
+            </div>
+
         </div>
 
-        <!-- Custom Notification Box instead of alert() -->
-        <div id="notification" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none">
-            Redirecting to game...
+        <footer class="mt-24 text-center pb-12 border-t border-white/5 pt-12">
+            <p class="text-slate-500 text-sm">Powered by Game Arcade Engine &copy; 2024</p>
+            <p class="text-xs text-slate-600 mt-2 italic">Current Fruit Buff: <span id="buff-name">Standard</span></p>
+        </footer>
+    </div>
+
+    <!-- Modern Notification UI -->
+    <div id="toast" class="fixed bottom-8 right-8 translate-y-20 opacity-0 transition-all duration-500 z-50">
+        <div class="bg-blue-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4">
+            <div class="w-2 h-2 bg-white rounded-full animate-ping"></div>
+            <span id="toast-message" class="font-bold">Redirecting...</span>
         </div>
     </div>
 
     <script>
-        function navigateTo(url) {
-            const notification = document.getElementById('notification');
-            notification.textContent = `Opening ${url.replace('.html', '').toUpperCase()}...`;
-            notification.style.opacity = '1';
+        function launchGame(name) {
+            const toast = document.getElementById('toast');
+            const message = document.getElementById('toast-message');
             
-            // Simple visual feedback before navigation
+            message.textContent = `Launching ${name}...`;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            // Generate URL based on name
+            const url = name.toLowerCase().replace(' ', '') + '.html';
+            
             setTimeout(() => {
                 window.location.href = url;
-            }, 800);
+            }, 1200);
+        }
+
+        function setTheme(tier) {
+            const body = document.body;
+            const buffText = document.getElementById('buff-name');
+            body.className = 'py-12 px-4'; // reset
+            
+            if (tier === 'godly') {
+                body.classList.add('theme-godly');
+                document.documentElement.style.setProperty('--primary-glow', '#fde047');
+                buffText.textContent = "Dragon West (MAX DMG)";
+            } else if (tier === 'bad') {
+                body.classList.add('theme-very-bad');
+                document.documentElement.style.setProperty('--primary-glow', '#ef4444');
+                buffText.textContent = "Rocket (Low Power)";
+            } else {
+                document.documentElement.style.setProperty('--primary-glow', '#3b82f6');
+                buffText.textContent = "Kitsune (High Speed)";
+            }
         }
     </script>
 </body>

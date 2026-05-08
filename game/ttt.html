@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blox Tic-Tac-Toe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap');
+        
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: #0f172a;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #1e293b;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .cell:hover {
+            background: #334155;
+            transform: scale(1.02);
+        }
+
+        .cell.win {
+            background: #22c55e;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .status-msg {
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .p1-color { color: #f87171; } /* Dragon Red */
+        .p2-color { color: #818cf8; } /* Kitsune Blue/Purple */
+
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="max-w-md w-full p-6 text-center">
+        <h1 class="text-4xl font-bold mb-2 tracking-tight">Blox Tic-Tac-Toe</h1>
+        <p class="text-slate-400 mb-8">Dragon 🐲 vs Kitsune 🦊</p>
+
+        <!-- Score Board -->
+        <div class="flex justify-between mb-8 bg-slate-800 p-4 rounded-2xl">
+            <div>
+                <p class="text-xs uppercase text-slate-400">Player 1 (X)</p>
+                <p class="text-2xl font-bold p1-color" id="score1">0</p>
+            </div>
+            <div class="h-10 w-px bg-slate-700"></div>
+            <div>
+                <p class="text-xs uppercase text-slate-400">Player 2 (O)</p>
+                <p class="text-2xl font-bold p2-color" id="score2">0</p>
+            </div>
+        </div>
+
+        <div id="status" class="mb-4 text-xl font-semibold status-msg">
+            <span class="p1-color">Dragon's</span> Turn
+        </div>
+
+        <!-- Game Grid -->
+        <div class="grid grid-cols-3 gap-3 mb-8" id="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+
+        <button onclick="resetGame()" class="bg-slate-700 hover:bg-slate-600 px-8 py-3 rounded-xl font-semibold transition-colors">
+            Reset Board
+        </button>
+    </div>
+
+    <!-- Win/Draw Overlay -->
+    <div id="overlay" class="overlay">
+        <h2 id="winner-text" class="text-5xl font-bold mb-6">Dragon Wins!</h2>
+        <button onclick="closeOverlay()" class="bg-indigo-600 hover:bg-indigo-500 px-10 py-4 rounded-2xl text-xl font-bold shadow-lg transition-transform active:scale-95">
+            Play Again
+        </button>
+    </div>
+
+    <script>
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let currentPlayer = "X"; // X is Dragon, O is Kitsune
+        let gameActive = true;
+        let scores = { X: 0, O: 0 };
+
+        const statusDisplay = document.getElementById('status');
+        const cells = document.querySelectorAll('.cell');
+        const overlay = document.getElementById('overlay');
+        const winnerText = document.getElementById('winner-text');
+
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Cols
+            [0, 4, 8], [2, 4, 6]             // Diagonals
+        ];
+
+        function handleCellClick(e) {
+            const clickedCell = e.target;
+            const index = parseInt(clickedCell.getAttribute('data-index'));
+
+            if (board[index] !== "" || !gameActive) return;
+
+            board[index] = currentPlayer;
+            clickedCell.innerText = currentPlayer;
+            clickedCell.classList.add(currentPlayer === 'X' ? 'p1-color' : 'p2-color');
+
+            checkResult();
+        }
+
+        function checkResult() {
+            let roundWon = false;
+            let winningLine = [];
+
+            for (let i = 0; i < winningConditions.length; i++) {
+                const [a, b, c] = winningConditions[i];
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    roundWon = true;
+                    winningLine = [a, b, c];
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                scores[currentPlayer]++;
+                updateScores();
+                showWinner(currentPlayer === 'X' ? "🐲 DRAGON WINS!" : "🦊 KITSUNE WINS!", winningLine);
+                gameActive = false;
+                return;
+            }
+
+            if (!board.includes("")) {
+                showWinner("IT'S A DRAW! ⚔️");
+                gameActive = false;
+                return;
+            }
+
+            currentPlayer = currentPlayer === "X" ? "O" : "X";
+            statusDisplay.innerHTML = currentPlayer === 'X' ? 
+                '<span class="p1-color">Dragon\'s</span> Turn' : 
+                '<span class="p2-color">Kitsune\'s</span> Turn';
+        }
+
+        function showWinner(message, line = []) {
+            line.forEach(index => {
+                cells[index].classList.add('win');
+            });
+
+            setTimeout(() => {
+                winnerText.innerText = message;
+                overlay.style.display = 'flex';
+            }, 600);
+        }
+
+        function updateScores() {
+            document.getElementById('score1').innerText = scores.X;
+            document.getElementById('score2').innerText = scores.O;
+        }
+
+        function resetGame() {
+            board = ["", "", "", "", "", "", "", "", ""];
+            gameActive = true;
+            currentPlayer = "X";
+            statusDisplay.innerHTML = '<span class="p1-color">Dragon\'s</span> Turn';
+            cells.forEach(cell => {
+                cell.innerText = "";
+                cell.classList.remove('win', 'p1-color', 'p2-color');
+            });
+        }
+
+        function closeOverlay() {
+            overlay.style.display = 'none';
+            resetGame();
+        }
+
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+    </script>
+</body>
+</html>
