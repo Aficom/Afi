@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Arcade Launcher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: radial-gradient(circle at center, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .icon-container {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .glow-text {
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Floating Animation */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .floating {
+            animation: float 4s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container max-w-4xl px-6 text-center">
+        <header class="mb-12">
+            <h1 class="text-5xl font-bold mb-4 glow-text">Game Arcade</h1>
+            <p class="text-blue-300 text-lg opacity-80">Choose your challenge for today</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Solitaire Card -->
+            <div onclick="navigateTo('solitaire.html')" class="glass-card p-10 flex flex-col items-center">
+                <div class="icon-container floating">🃏</div>
+                <h2 class="text-3xl font-semibold mb-2">Solitaire</h2>
+                <p class="text-gray-400 mb-6">Master the deck and clear the board in this classic card game.</p>
+                <span class="inline-block bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-full transition-colors">
+                    Launch Game
+                </span>
+            </div>
+
+            <!-- Chess Card -->
+            <div onclick="navigateTo('chess.html')" class="glass-card p-10 flex flex-col items-center">
+                <div class="icon-container floating" style="animation-delay: 1s;">♟️</div>
+                <h2 class="text-3xl font-semibold mb-2">Chess</h2>
+                <p class="text-gray-400 mb-6">Strategic warfare on 64 squares. Outsmart your opponent.</p>
+                <span class="inline-block bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-8 rounded-full transition-colors">
+                    Launch Game
+                </span>
+            </div>
+        </div>
+
+        <!-- Custom Notification Box instead of alert() -->
+        <div id="notification" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white text-black px-6 py-3 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none">
+            Redirecting to game...
+        </div>
+    </div>
+
+    <script>
+        function navigateTo(url) {
+            const notification = document.getElementById('notification');
+            notification.textContent = `Opening ${url.replace('.html', '').toUpperCase()}...`;
+            notification.style.opacity = '1';
+            
+            // Simple visual feedback before navigation
+            setTimeout(() => {
+                window.location.href = url;
+            }, 800);
+        }
+    </script>
+</body>
+</html>

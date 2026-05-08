@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeCanvas IDE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #editor-container {
+            position: relative;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            tab-size: 4;
+        }
+
+        #editing, #highlighting {
+            margin: 0;
+            padding: 15px;
+            border: 0;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            overflow-y: auto;
+        }
+
+        #editing {
+            z-index: 1;
+            white-space: pre;
+            color: transparent;
+            background: transparent;
+            caret-color: white;
+            resize: none;
+            outline: none;
+        }
+
+        #highlighting {
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Syntax Highlighting Colors */
+        .token.tag-bracket { color: #94a3b8; } /* Grey < > */
+        .token.tag-name { color: #4ade80; }    /* Green h1, div */
+        .token.attr-name { color: #fbbf24; }   /* Yellow class, id */
+        .token.attr-value { color: #38bdf8; }  /* Blue "value" */
+        .token.comment { color: #64748b; font-style: italic; }
+        .token.string { color: #38bdf8; }
+        .token.keyword { color: #c084fc; }
+
+        .pane-title {
+            background: #1e293b;
+            padding: 8px 16px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .console-line {
+            border-bottom: 1px solid #1e293b;
+            padding: 4px 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+        }
+        
+        .console-log { color: #e2e8f0; }
+        .console-error { color: #ef4444; background: #450a0a; }
+        .console-warn { color: #f59e0b; background: #451a03; }
+
+        iframe {
+            background: white;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="flex flex-col h-screen">
+        <!-- Header -->
+        <header class="bg-slate-900 border-b border-slate-700 p-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center font-bold">C</div>
+                <h1 class="text-lg font-bold tracking-tight">CodeCanvas <span class="text-slate-500 font-normal text-sm">v1.0</span></h1>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="runCode()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    Run Code
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Left: Editor -->
+            <div class="w-1/2 flex flex-col border-r border-slate-700">
+                <div class="pane-title">
+                    <span>index.html</span>
+                    <span class="text-slate-500">HTML / CSS / JS</span>
+                </div>
+                <div id="editor-container" class="flex-1 overflow-hidden bg-[#0d1117]">
+                    <textarea id="editing" spellcheck="false" oninput="updateEditor(this.value); syncScroll(this);" onscroll="syncScroll(this)" onkeydown="checkTab(event)">
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { 
+      font-family: sans-serif; 
+      text-align: center; 
+      padding-top: 50px;
+    }
+    h1 { color: #4ade80; }
+    button { 
+      padding: 10px 20px; 
+      cursor: pointer; 
+      border-radius: 8px;
+      border: none;
+      background: #6366f1;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hello World!</h1>
+  <p>Try changing the code on the left.</p>
+  <button onclick="greet()">Click Me</button>
+
+  <script>
+    function greet() {
+      console.log("Button was clicked!");
+      alert("Hello from CodeCanvas!");
+    }
+    
+    console.log("App initialized");
+  </script>
+</body>
+</html></textarea>
+                    <pre id="highlighting" aria-hidden="true"><code id="highlighting-content"></code></pre>
+                </div>
+            </div>
+
+            <!-- Right: Preview & Console -->
+            <div class="w-1/2 flex flex-col">
+                <!-- Top: Preview -->
+                <div class="flex-1 flex flex-col">
+                    <div class="pane-title">Live Preview</div>
+                    <div class="flex-1 bg-white">
+                        <iframe id="preview"></iframe>
+                    </div>
+                </div>
+
+                <!-- Bottom: Console -->
+                <div class="h-1/3 flex flex-col border-t border-slate-700 bg-slate-900">
+                    <div class="pane-title">
+                        <span>Console</span>
+                        <button onclick="clearConsole()" class="text-[10px] hover:text-white transition-colors">Clear</button>
+                    </div>
+                    <div id="console-output" class="flex-1 overflow-y-auto p-2">
+                        <!-- Logs go here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editing');
+        const highlightDisplay = document.getElementById('highlighting-content');
+        const previewFrame = document.getElementById('preview');
+        const consoleOutput = document.getElementById('console-output');
+
+        // Simple Syntax Highlighting Engine
+        function highlight(code) {
+            // Escape HTML
+            let html = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            // Tags <tag>
+            html = html.replace(/(&lt;\/?)(\w+)(.*?)(&gt;)/g, function(match, open, name, attr, close) {
+                // Highlight attributes inside the tag
+                let highlightedAttr = attr.replace(/(\s+)([\w-]+)(=)(["'].*?["'])/g, '$1<span class="token attr-name">$2</span>$3<span class="token attr-value">$4</span>');
+                
+                return `<span class="token tag-bracket">${open}</span><span class="token tag-name">${name}</span>${highlightedAttr}<span class="token tag-bracket">${close}</span>`;
+            });
+
+            // Comments
+            html = html.replace(/&lt;!--[\s\S]*?--&gt;/g, '<span class="token comment">$&</span>');
+            
+            return html;
+        }
+
+        function updateEditor(text) {
+            highlightDisplay.innerHTML = highlight(text);
+        }
+
+        function syncScroll(element) {
+            const resultElement = document.getElementById('highlighting');
+            resultElement.scrollTop = element.scrollTop;
+            resultElement.scrollLeft = element.scrollLeft;
+        }
+
+        function checkTab(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                let start = editor.selectionStart;
+                let end = editor.selectionEnd;
+                editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(end);
+                editor.selectionStart = editor.selectionEnd = start + 4;
+                updateEditor(editor.value);
+            }
+        }
+
+        function addToConsole(msg, type = 'log') {
+            const line = document.createElement('div');
+            line.className = `console-line console-${type}`;
+            
+            // Format object display
+            const content = typeof msg === 'object' ? JSON.stringify(msg) : msg;
+            line.textContent = `> ${content}`;
+            
+            consoleOutput.appendChild(line);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        function clearConsole() {
+            consoleOutput.innerHTML = '';
+        }
+
+        function runCode() {
+            const code = editor.value;
+            
+            // Script to inject for console redirection
+            const consoleProxy = `
+                <script>
+                    const _log = console.log;
+                    const _error = console.error;
+                    const _warn = console.warn;
+
+                    console.log = function(...args) {
+                        window.parent.postMessage({type: 'log', data: args.join(' ')}, '*');
+                        _log.apply(console, args);
+                    };
+                    console.error = function(...args) {
+                        window.parent.postMessage({type: 'error', data: args.join(' ')}, '*');
+                        _error.apply(console, args);
+                    };
+                    console.warn = function(...args) {
+                        window.parent.postMessage({type: 'warn', data: args.join(' ')}, '*');
+                        _warn.apply(console, args);
+                    };
+
+                    window.onerror = function(message, source, lineno, colno, error) {
+                        window.parent.postMessage({type: 'error', data: message + " (Line: " + lineno + ")"}, '*');
+                    };
+                <\/script>
+            `;
+
+            // Combine proxy with user code
+            const finalCode = code.replace('<head>', '<head>' + consoleProxy);
+            
+            const blob = new Blob([finalCode], { type: 'text/html' });
+            previewFrame.src = URL.createObjectURL(blob);
+        }
+
+        // Listen for messages from the iframe console
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type) {
+                addToConsole(event.data.data, event.data.type);
+            }
+        });
+
+        // Initialize
+        window.onload = () => {
+            updateEditor(editor.value);
+            runCode();
+        };
+    </script>
+</body>
+</html>
