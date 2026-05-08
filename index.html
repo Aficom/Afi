@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Shortcut Hub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #1a1a1a;
+            color: white;
+            margin: 0;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            color: #00ffcc;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+            border-radius: 8px;
+            transition: transform 0.2s, background-color 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Different colors for different buttons */
+        .webdev { background-color: #3498db; }
+        .game { background-color: #e74c3c; }
+        .chrome { background-color: #f1c40f; color: black; }
+
+        .btn:hover {
+            transform: scale(1.1);
+            filter: brightness(1.1);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Project Teleporter</h1>
+
+    <div class="container">
+        <!-- Teleport to coding/webdev.html -->
+        <a href="coding/webdev.html" class="btn webdev">Web Dev</a>
+
+        <!-- Teleport to game/ folder -->
+        <a href="game/" class="btn game">Games</a>
+
+        <!-- Teleport to chrome/ folder -->
+        <a href="chrome/" class="btn chrome">Chrome</a>
+    </div>
+
+</body>
+</html>
