@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Word Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .paper {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 20px auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            outline: none;
+        }
+        .toolbar-btn {
+            @apply p-2 hover:bg-gray-200 rounded transition-colors flex items-center justify-center;
+            min-width: 35px;
+        }
+        .toolbar-btn.active {
+            @apply bg-blue-100 text-blue-600;
+        }
+        @media print {
+            body { background: white; }
+            .no-print { display: none; }
+            .paper { margin: 0; box-shadow: none; }
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- Top Ribbon / Navbar -->
+    <header class="no-print bg-[#2b579a] text-white p-2 flex items-center justify-between shadow-md">
+        <div class="flex items-center gap-3 ml-4">
+            <i class="fas fa-file-word text-2xl"></i>
+            <span class="font-semibold text-lg">Web Word - Document 1</span>
+        </div>
+        <div class="flex gap-4 mr-4">
+            <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded text-sm transition">
+                <i class="fas fa-print mr-2"></i>Print / Save PDF
+            </button>
+        </div>
+    </header>
+
+    <!-- Toolbar -->
+    <div class="no-print bg-white border-b border-gray-300 p-2 flex flex-wrap gap-1 sticky top-0 z-10 shadow-sm px-4">
+        <!-- Font Styles -->
+        <button onclick="execCmd('bold')" class="toolbar-btn" title="Bold"><i class="fas fa-bold"></i></button>
+        <button onclick="execCmd('italic')" class="toolbar-btn" title="Italic"><i class="fas fa-italic"></i></button>
+        <button onclick="execCmd('underline')" class="toolbar-btn" title="Underline"><i class="fas fa-underline"></i></button>
+        <button onclick="execCmd('strikeThrough')" class="toolbar-btn" title="Strikethrough"><i class="fas fa-strikethrough"></i></button>
+        
+        <div class="w-px h-6 bg-gray-300 mx-2 self-center"></div>
+
+        <!-- Alignment -->
+        <button onclick="execCmd('justifyLeft')" class="toolbar-btn" title="Align Left"><i class="fas fa-align-left"></i></button>
+        <button onclick="execCmd('justifyCenter')" class="toolbar-btn" title="Align Center"><i class="fas fa-align-center"></i></button>
+        <button onclick="execCmd('justifyRight')" class="toolbar-btn" title="Align Right"><i class="fas fa-align-right"></i></button>
+        <button onclick="execCmd('justifyFull')" class="toolbar-btn" title="Justify"><i class="fas fa-align-justify"></i></button>
+
+        <div class="w-px h-6 bg-gray-300 mx-2 self-center"></div>
+
+        <!-- Lists -->
+        <button onclick="execCmd('insertUnorderedList')" class="toolbar-btn" title="Bullet List"><i class="fas fa-list-ul"></i></button>
+        <button onclick="execCmd('insertOrderedList')" class="toolbar-btn" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+
+        <div class="w-px h-6 bg-gray-300 mx-2 self-center"></div>
+
+        <!-- Colors & Size -->
+        <input type="color" onchange="execValue('foreColor', this.value)" class="w-8 h-8 p-0 border-none cursor-pointer" title="Text Color">
+        
+        <select onchange="execValue('fontSize', this.value)" class="border rounded px-2 text-sm">
+            <option value="1">Small</option>
+            <option value="3" selected>Normal</option>
+            <option value="5">Large</option>
+            <option value="7">Extra Large</option>
+        </select>
+
+        <div class="w-px h-6 bg-gray-300 mx-2 self-center"></div>
+
+        <!-- Actions -->
+        <button onclick="execCmd('undo')" class="toolbar-btn" title="Undo"><i class="fas fa-undo"></i></button>
+        <button onclick="execCmd('redo')" class="toolbar-btn" title="Redo"><i class="fas fa-redo"></i></button>
+        <button onclick="clearEditor()" class="toolbar-btn text-red-500" title="Clear All"><i class="fas fa-trash"></i></button>
+    </div>
+
+    <!-- Main Editor Area -->
+    <main class="flex-1 overflow-y-auto pt-4 pb-10">
+        <div 
+            id="editor" 
+            class="paper" 
+            contenteditable="true" 
+            spellcheck="true"
+        >
+        </div>
+    </main>
+
+    <!-- Footer / Status Bar -->
+    <footer class="no-print bg-[#2b579a] text-white text-xs p-1 px-4 flex justify-between">
+        <div>Ready</div>
+        <div id="wordCount">Words: 0</div>
+    </footer>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const wordCountDisplay = document.getElementById('wordCount');
+
+        // Execute basic commands
+        function execCmd(command) {
+            document.execCommand(command, false, null);
+            editor.focus();
+        }
+
+        // Execute commands with values (color, font size)
+        function execValue(command, value) {
+            document.execCommand(command, false, value);
+            editor.focus();
+        }
+
+        // Clear the editor
+        function clearEditor() {
+            if(confirm('Do you want to erase all content?')) {
+                editor.innerHTML = '';
+            }
+        }
+
+        // Word count logic
+        editor.addEventListener('input', () => {
+            const text = editor.innerText.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            wordCountDisplay.innerText = `Words: ${words}`;
+        });
+
+        // Auto-focus editor on load
+        window.onload = () => {
+            editor.focus();
+        };
+
+        // Keyboard shortcuts support (Ctrl+S for save/print)
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                window.print();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uno Ultimate - Dragon Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Outfit:wght@400;600;800&display=swap');
+
+        :root {
+            --bg-color: #0f172a;
+            --glass: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        /* Responsive Hand Containers */
+        .hand-scroll-container {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: visible;
+            display: flex;
+            align-items: center;
+            padding: 20px 10px;
+            min-height: 150px;
+            scrollbar-width: thin;
+            scrollbar-color: #fbbf24 rgba(255, 255, 255, 0.1);
+        }
+
+        .hand-inner {
+            display: flex;
+            flex-wrap: nowrap !important;
+            gap: -20px; /* Overlap cards slightly */
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Card Design */
+        .card {
+            width: 75px;
+            height: 115px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: white;
+            position: relative;
+            box-shadow: -4px 4px 10px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, margin 0.2s ease;
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            flex-shrink: 0;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+            margin-left: -20px;
+            background-size: 200% 200%;
+        }
+
+        .card:first-child { margin-left: 0; }
+
+        .player-card:hover { 
+            transform: translateY(-20px) scale(1.1); 
+            z-index: 50 !important; 
+            border-color: #fff; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+            margin-right: 15px; /* Push neighbors away slightly */
+        }
+
+        .card-red { background: linear-gradient(135deg, #ef4444, #991b1b); }
+        .card-blue { background: linear-gradient(135deg, #3b82f6, #1e3a8a); }
+        .card-green { background: linear-gradient(135deg, #22c55e, #14532d); }
+        .card-yellow { background: linear-gradient(135deg, #eab308, #854d0e); }
+        .card-black { background: linear-gradient(135deg, #1e293b, #020617); border-color: #fbbf24; color: #fbbf24;}
+        
+        .card-back {
+            background: linear-gradient(135deg, #450a0a, #7f1d1d);
+            border-color: #fca5a5;
+            margin-left: -40px; /* Tighter overlap for bot */
+        }
+        .card-back:first-child { margin-left: 0; }
+        .card-back::after {
+            content: "UNO";
+            font-family: 'Fredoka One', cursive;
+            color: #fef08a;
+            font-size: 1rem;
+            transform: rotate(-20deg);
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+        }
+
+        /* Center Play Zone */
+        .play-zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+            background: rgba(255,255,255,0.02);
+            border-top: 1px solid var(--glass-border);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .deck-pile {
+            width: 85px;
+            height: 125px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        .deck-pile:active { transform: scale(0.95); }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+        }
+
+        .modal {
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .active-turn {
+            box-shadow: 0 0 15px 2px rgba(74, 222, 128, 0.6);
+            border-color: rgba(74, 222, 128, 1);
+        }
+        .bot-active {
+            box-shadow: 0 0 15px 2px rgba(96, 165, 250, 0.6);
+            border-color: rgba(96, 165, 250, 1);
+        }
+
+        /* Mini indicators on cards */
+        .card-value-mini {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-size: 0.7rem;
+            line-height: 1;
+        }
+        .card-value-mini-bottom {
+            position: absolute;
+            bottom: 4px;
+            right: 6px;
+            font-size: 0.7rem;
+            line-height: 1;
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP: BOT AREA -->
+    <div class="flex flex-col items-center pt-4 transition-all duration-300" id="bot-zone">
+        <div id="bot-panel" class="px-6 py-1.5 glass-panel text-[12px] font-black text-blue-400 uppercase tracking-widest mb-1 shadow-lg">
+            Kitsune Boss (Bot)
+        </div>
+        <div class="hand-scroll-container">
+            <div id="bot-hand" class="hand-inner"></div>
+        </div>
+    </div>
+
+    <!-- MIDDLE: COMBAT/PLAY ZONE -->
+    <div class="play-zone">
+        <!-- Log -->
+        <div class="absolute left-4 top-4 w-48 h-32 glass-panel p-3 text-[11px] flex flex-col hidden md:flex shadow-xl">
+            <div class="border-b border-white/20 mb-2 pb-1 font-bold tracking-wider text-gray-300 flex justify-between">
+                <span>BATTLE LOG</span>
+                <span id="deck-count" class="text-gray-400">Deck: 0</span>
+            </div>
+            <div id="game-log" class="overflow-y-auto flex-1 flex flex-col gap-1 pr-1" style="scrollbar-width: none;"></div>
+        </div>
+
+        <div class="flex items-center gap-16">
+            <!-- Draw Pile -->
+            <div id="draw-pile" class="deck-pile relative shadow-2xl group hover:border-white/50">
+                <div class="card card-back absolute inset-0 m-auto" style="width: 100%; height: 100%; margin: 0; box-shadow: none;"></div>
+                <div class="absolute -top-4 -right-4 bg-red-600 rounded-full px-3 py-1.5 text-[11px] font-black border-2 border-white shadow-lg group-hover:bg-red-500 transition-colors z-10">DRAW</div>
+            </div>
+
+            <!-- Discard (The Middle Card) -->
+            <div class="flex flex-col items-center gap-4">
+                <div id="discard-pile-container" class="scale-125 shadow-2xl rounded-xl relative"></div>
+                
+                <div class="flex flex-col items-center gap-1 bg-black/40 px-6 py-2 rounded-xl border border-white/10 backdrop-blur-md">
+                    <div id="current-color-indicator" class="h-2 w-20 rounded-full bg-white/20 shadow-inner"></div>
+                    <div id="turn-display" class="text-[13px] font-black uppercase tracking-widest text-green-400 mt-1">Your Turn</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stack Counter -->
+        <div id="stack-warning" class="hidden absolute right-10 top-1/2 -translate-y-1/2 bg-red-600 border-2 border-white text-white px-4 py-2 rounded-xl text-sm font-black animate-pulse shadow-[0_0_20px_rgba(220,38,38,0.8)]">
+            STACK ATTACK: +<span id="stack-count">0</span>
+        </div>
+        
+        <!-- Action Toast -->
+        <div id="action-toast" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl font-black text-white italic opacity-0 transition-opacity duration-300 pointer-events-none drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)]" style="font-family: 'Fredoka One', cursive;">
+            UNO!
+        </div>
+    </div>
+
+    <!-- BOTTOM: PLAYER AREA -->
+    <div class="flex flex-col items-center pb-6 transition-all duration-300" id="player-zone">
+        <div class="hand-scroll-container">
+            <div id="player-hand" class="hand-inner"></div>
+        </div>
+        <div id="player-panel" class="px-6 py-1.5 glass-panel text-[12px] font-black text-green-400 uppercase tracking-widest mt-2 shadow-lg">
+            Dragon Master (You)
+        </div>
+    </div>
+
+    <!-- Color Chooser -->
+    <div id="color-modal" class="modal">
+        <div class="glass-panel p-8 text-center max-w-sm w-full mx-4 shadow-[0_0_40px_rgba(0,0,0,0.8)]">
+            <h2 class="text-xl font-black mb-6 tracking-widest text-yellow-300">SELECT ELEMENT</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="selectColor('red')" class="w-full h-20 bg-gradient-to-br from-red-400 to-red-700 rounded-xl border-2 border-white/20 hover:border-white hover:scale-105 transition-all shadow-lg"></button>
+                <button onclick="selectColor('blue')" class="w-full h-20 bg-gradient-to-br from-blue-400 to-blue-700 rounded-xl border-2 border-white/20 hover:border-white hover:scale-105 transition-all shadow-lg"></button>
+                <button onclick="selectColor('green')" class="w-full h-20 bg-gradient-to-br from-green-400 to-green-700 rounded-xl border-2 border-white/20 hover:border-white hover:scale-105 transition-all shadow-lg"></button>
+                <button onclick="selectColor('yellow')" class="w-full h-20 bg-gradient-to-br from-yellow-300 to-yellow-600 rounded-xl border-2 border-white/20 hover:border-white hover:scale-105 transition-all shadow-lg"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- End Game Modal -->
+    <div id="end-modal" class="modal">
+        <div class="glass-panel p-10 text-center shadow-[0_0_50px_rgba(0,0,0,0.9)] border-yellow-500/50 border-2">
+            <h1 id="win-status" class="text-5xl font-black mb-2 tracking-tighter" style="font-family: 'Fredoka One', cursive;"></h1>
+            <p id="win-subtitle" class="text-gray-300 mb-8 font-semibold"></p>
+            <button onclick="location.reload()" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl font-black text-sm uppercase tracking-widest transition-transform hover:scale-105 shadow-lg border border-white/20">
+                Play Rematch
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const ICONS = { 'Skip': '⊘', 'Reverse': '⇄', 'Wild': '★' };
+        const COLORS = ['red', 'blue', 'green', 'yellow'];
+        // Extended wilds for the "Ultimate Dragon" feel
+        const WILDS = [{v:'Wild', d:0}, {v:'+4', d:4}, {v:'+6', d:6}, {v:'+10', d:10}]; 
+        
+        let deck = [], discard = [], playerHand = [], botHand = [];
+        let currentTurn = 'player', colorToMatch = '', valueToMatch = '', stackCount = 0;
+        let isAnimating = false;
+
+        function log(msg, type = 'system') {
+            const logContainer = document.getElementById('game-log');
+            const p = document.createElement('div');
+            p.textContent = `> ${msg}`;
+            
+            if (type === 'player') p.className = 'text-green-400 font-semibold';
+            else if (type === 'bot') p.className = 'text-blue-400 font-semibold';
+            else if (type === 'alert') p.className = 'text-red-400 font-bold';
+            else p.className = 'text-gray-400 text-[10px]';
+            
+            logContainer.appendChild(p);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function showToast(text, colorClass = 'text-white') {
+            const toast = document.getElementById('action-toast');
+            toast.textContent = text;
+            toast.className = `absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-5xl font-black italic transition-opacity duration-300 pointer-events-none drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] z-50 ${colorClass}`;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translate(-50%, -50%) scale(1.2)';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 1200);
+        }
+
+        function createCardUI(card, isPlayer = false) {
+            const div = document.createElement('div');
+            let baseClass = `card ${card.c === 'black' ? 'card-black' : 'card-'+card.c}`;
+            if (isPlayer) baseClass += ' player-card';
+            div.className = baseClass;
+            
+            const displayVal = ICONS[card.v] || card.v;
+            div.innerHTML = `
+                <span class="card-value-mini">${displayVal}</span>
+                <span class="text-3xl">${displayVal}</span>
+                <span class="card-value-mini-bottom">${displayVal}</span>
+            `;
+            return div;
+        }
+
+        function reshuffleDeck() {
+            log("Deck empty! Reshuffling discard pile...", "system");
+            const topCard = discard.pop(); // Keep top card
+            deck = discard.filter(c => c.v !== '+6' && c.v !== '+10'); // Optional: remove extreme wilds on reshuffle to prevent endless games
+            deck.sort(() => Math.random() - 0.5);
+            discard = [topCard];
+            document.getElementById('deck-count').textContent = `Deck: ${deck.length}`;
+        }
+
+        function drawCards(amount, handArray, isBot) {
+            for(let i=0; i<amount; i++) {
+                if(deck.length === 0) reshuffleDeck();
+                if(deck.length > 0) handArray.push(deck.pop());
+            }
+            document.getElementById('deck-count').textContent = `Deck: ${deck.length}`;
+        }
+
+        function init() {
+            deck = [];
+            // Build Deck
+            COLORS.forEach(c => {
+                deck.push({c, v:'0', t:'num'});
+                for(let i=1; i<=9; i++) { deck.push({c, v:i.toString(), t:'num'}); deck.push({c, v:i.toString(), t:'num'}); }
+                ['Skip', 'Reverse', '+2'].forEach(a => { deck.push({c, v:a, t:'act'}); deck.push({c, v:a, t:'act'}); });
+            });
+            WILDS.forEach(w => { for(let i=0; i<4; i++) deck.push({c:'black', v:w.v, d:w.d}); });
+            
+            // Shuffle
+            deck.sort(() => Math.random() - 0.5);
+
+            // Deal
+            drawCards(7, playerHand, false);
+            drawCards(7, botHand, true);
+            
+            // Start Pile (ensure it's a number)
+            let startIdx = deck.findIndex(c => c.t === 'num');
+            if(startIdx === -1) startIdx = 0; // Fallback
+            let startCard = deck.splice(startIdx, 1)[0];
+            discard = [startCard];
+            
+            colorToMatch = startCard.c;
+            valueToMatch = startCard.v;
+            
+            log("Battle Commences!", "system");
+            updateTurnUI();
+            render();
+        }
+
+        function updateTurnUI() {
+            const pZone = document.getElementById('player-panel');
+            const bZone = document.getElementById('bot-panel');
+            const tDisp = document.getElementById('turn-display');
+
+            if (currentTurn === 'player') {
+                pZone.classList.add('active-turn');
+                bZone.classList.remove('bot-active');
+                tDisp.textContent = 'YOUR TURN';
+                tDisp.className = 'text-[13px] font-black uppercase tracking-widest text-green-400 mt-1';
+            } else {
+                pZone.classList.remove('active-turn');
+                bZone.classList.add('bot-active');
+                tDisp.textContent = 'KITSUNE THINKING...';
+                tDisp.className = 'text-[13px] font-black uppercase tracking-widest text-blue-400 mt-1 animate-pulse';
+            }
+        }
+
+        function render() {
+            const pEl = document.getElementById('player-hand');
+            const bEl = document.getElementById('bot-hand');
+            pEl.innerHTML = ''; bEl.innerHTML = '';
+
+            // Render Player Hand
+            playerHand.forEach((c, i) => {
+                const el = createCardUI(c, true);
+                el.style.zIndex = i;
+                // Highlight playable cards slightly if it's player's turn
+                const isPlayable = isCardPlayable(c);
+                if(currentTurn === 'player' && isPlayable) {
+                    el.style.boxShadow = "0 -2px 10px rgba(255,255,255,0.3)";
+                } else if (currentTurn === 'player' && !isPlayable) {
+                    el.style.opacity = "0.7";
+                }
+
+                el.onclick = () => playCard(i);
+                pEl.appendChild(el);
+            });
+
+            // Render Bot Hand
+            botHand.forEach((_, i) => {
+                const el = document.createElement('div');
+                el.className = 'card card-back';
+                el.style.zIndex = i;
+                bEl.appendChild(el);
+            });
+
+            // Render Discard Pile
+            const top = discard[discard.length-1];
+            const discCont = document.getElementById('discard-pile-container');
+            discCont.innerHTML = '';
+            
+            const topCardEl = createCardUI(top);
+            topCardEl.style.margin = '0'; // reset overlap margin for center card
+            discCont.appendChild(topCardEl);
+
+            // Update Color Indicator
+            const colorMap = { 'red': '#ef4444', 'blue': '#3b82f6', 'green': '#22c55e', 'yellow': '#eab308', 'black': '#ffffff' };
+            document.getElementById('current-color-indicator').style.backgroundColor = colorMap[colorToMatch] || '#fff';
+            document.getElementById('current-color-indicator').style.boxShadow = `0 0 10px ${colorMap[colorToMatch] || '#fff'}`;
+            
+            // Update Stack Warning
+            const sw = document.getElementById('stack-warning');
+            if(stackCount > 0) { 
+                sw.classList.remove('hidden'); 
+                document.getElementById('stack-count').textContent = stackCount; 
+            } else {
+                sw.classList.add('hidden');
+            }
+
+            document.getElementById('deck-count').textContent = `Deck: ${deck.length}`;
+
+            // Win Condition Check
+            if(playerHand.length === 0) showEnd("VICTORY!", "The Dragon Master prevails!", "text-yellow-400");
+            else if(botHand.length === 0) showEnd("DEFEAT!", "The Kitsune Boss outsmarted you.", "text-red-500");
+            else {
+                // UNO Calling checks
+                if(playerHand.length === 1 && currentTurn === 'bot') showToast("UNO!", "text-green-400");
+                if(botHand.length === 1 && currentTurn === 'player') showToast("KITSUNE UNO!", "text-blue-400");
+            }
+        }
+
+        function isCardPlayable(card) {
+            if (stackCount > 0) {
+                // Must play a stacking card
+                return (card.v.includes('+') || card.v === '+2');
+            }
+            return (card.c === 'black' || card.c === colorToMatch || card.v === valueToMatch);
+        }
+
+        function playCard(idx) {
+            if(currentTurn !== 'player' || isAnimating) return;
+            const card = playerHand[idx];
+            
+            if(isCardPlayable(card)) {
+                log(`You played ${card.c !== 'black' ? card.c : ''} ${card.v}`, 'player');
+                playerHand.splice(idx, 1);
+                discard.push(card);
+                
+                processCardEffect(card, 'player');
+            } else {
+                // Shake effect for invalid play
+                const cardEl = document.getElementById('player-hand').children[idx];
+                cardEl.animate([
+                    { transform: 'translatex(0)' },
+                    { transform: 'translatex(-10px)' },
+                    { transform: 'translatex(10px)' },
+                    { transform: 'translatex(0)' }
+                ], { duration: 200 });
+            }
+        }
+
+        function processCardEffect(card, playerType) {
+            colorToMatch = card.c;
+            valueToMatch = card.v;
+
+            // Handle Stacking Accumulation
+            if(card.d) stackCount += card.d; 
+            else if(card.v === '+2') stackCount += 2;
+
+            // In 1v1, Skip and Reverse both give an extra turn
+            let isExtraTurn = (card.v === 'Skip' || card.v === 'Reverse');
+            if (isExtraTurn) showToast("EXTRA TURN!", playerType === 'player' ? "text-green-400" : "text-blue-400");
+
+            if(card.c === 'black') {
+                if (playerType === 'player') {
+                    document.getElementById('color-modal').style.display = 'flex';
+                    // The turn logic continues inside selectColor()
+                } else {
+                    // Bot selects color
+                    botSelectColor(isExtraTurn);
+                }
+            } else {
+                finalizeTurn(isExtraTurn, playerType);
+            }
+        }
+
+        function finalizeTurn(isExtraTurn, currentPlayer) {
+            if (!isExtraTurn) {
+                currentTurn = currentPlayer === 'player' ? 'bot' : 'player';
+            } else {
+                log(`${currentPlayer === 'player' ? 'You' : 'Kitsune'} get an extra turn!`, 'alert');
+            }
+            
+            updateTurnUI();
+            render();
+
+            if (currentTurn === 'bot') {
+                isAnimating = true;
+                setTimeout(() => { isAnimating = false; botMove(); }, Math.random() * 800 + 800); // 0.8s - 1.6s delay
+            }
+        }
+
+        function selectColor(c) {
+            colorToMatch = c;
+            log(`You chose ${c.toUpperCase()}`, 'player');
+            document.getElementById('color-modal').style.display = 'none';
+            
+            // Wild cards don't skip in standard rules unless stacked or house rules, we stick to standard: turn passes.
+            finalizeTurn(false, 'player'); 
+        }
+
+        function botSelectColor(isExtraTurn) {
+            // Smart color selection: pick the color the bot has the most of
+            const counts = {red: 0, blue: 0, green: 0, yellow: 0};
+            botHand.forEach(c => { if(c.c !== 'black') counts[c.c]++; });
+            
+            let bestColor = 'red';
+            let maxCount = -1;
+            for (const [color, count] of Object.entries(counts)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    bestColor = color;
+                }
+            }
+            
+            // Small chance to just pick random to be unpredictable
+            if(Math.random() < 0.2) bestColor = COLORS[Math.floor(Math.random()*4)];
+
+            colorToMatch = bestColor;
+            log(`Kitsune Boss changed color to ${bestColor.toUpperCase()}`, 'alert');
+            showToast(bestColor.toUpperCase() + "!", `text-${bestColor}-500`);
+            
+            finalizeTurn(isExtraTurn, 'bot');
+        }
+
+        function botMove() {
+            if(currentTurn !== 'bot') return;
+            
+            // Find playable cards
+            let playableIndices = [];
+            botHand.forEach((c, idx) => {
+                if (isCardPlayable(c)) playableIndices.push(idx);
+            });
+
+            if(playableIndices.length > 0) {
+                // Strategic AI: Prefer keeping Wilds for last if possible, play highest value or action cards first
+                playableIndices.sort((a, b) => {
+                    const cardA = botHand[a];
+                    const cardB = botHand[b];
+                    if (cardA.c === 'black' && cardB.c !== 'black') return 1; // Put blacks at the end
+                    if (cardA.c !== 'black' && cardB.c === 'black') return -1;
+                    return 0; // Simple enough for now
+                });
+
+                const playIdx = playableIndices[0];
+                const card = botHand.splice(playIdx, 1)[0];
+                discard.push(card);
+                
+                log(`Kitsune plays ${card.c !== 'black' ? card.c : ''} ${card.v}`, 'bot');
+                processCardEffect(card, 'bot');
+
+            } else {
+                // Draw
+                const amt = stackCount > 0 ? stackCount : 1;
+                log(`Kitsune draws ${amt} card(s)`, 'bot');
+                drawCards(amt, botHand, true);
+                
+                stackCount = 0;
+                currentTurn = 'player';
+                updateTurnUI();
+                render();
+            }
+        }
+
+        // Draw Pile Click Event
+        document.getElementById('draw-pile').onclick = () => {
+            if(currentTurn !== 'player' || isAnimating) return;
+            
+            const amt = stackCount > 0 ? stackCount : 1;
+            log(`You draw ${amt} card(s)`, 'player');
+            drawCards(amt, playerHand, false);
+            
+            stackCount = 0;
+            currentTurn = 'bot';
+            updateTurnUI();
+            render();
+            
+            isAnimating = true;
+            setTimeout(() => { isAnimating = false; botMove(); }, 1000);
+        };
+
+        function showEnd(title, subtitle, colorClass) {
+            const statusEl = document.getElementById('win-status');
+            statusEl.textContent = title;
+            statusEl.className = `text-5xl font-black mb-2 tracking-tighter ${colorClass}`;
+            document.getElementById('win-subtitle').textContent = subtitle;
+            document.getElementById('end-modal').style.display = 'flex';
+        }
+
+        // Boot
+        init();
+    </script>
+</body>
+</html>

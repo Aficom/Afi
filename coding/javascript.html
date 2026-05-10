@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeNexus JS - Premium JavaScript Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Monaco Editor Loader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #020617;
+            --bg-surface: #0f172a;
+            --accent-primary: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.5);
+        }
+
+        body { 
+            background-color: var(--bg-deep); 
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; 
+        }
+
+        #editor-container { 
+            height: calc(100vh - 64px); 
+        }
+
+        .monaco-editor, .monaco-editor .margin, .monaco-editor-background {
+            background-color: var(--bg-surface) !important;
+        }
+
+        .console-output { 
+            font-family: 'Fira Code', monospace; 
+            scrollbar-width: thin;
+            scrollbar-color: #334155 transparent;
+        }
+
+        .console-output::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .console-output::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+
+        .run-btn-glow {
+            box-shadow: 0 0 15px var(--accent-glow);
+            transition: all 0.3s ease;
+        }
+
+        .run-btn-glow:hover {
+            box-shadow: 0 0 25px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+
+        .loading-overlay {
+            display: flex;
+            position: fixed;
+            inset: 0;
+            background: var(--bg-deep);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .language-badge {
+            background: rgba(247, 223, 30, 0.1);
+            color: #f7df1e;
+            border: 1px solid rgba(247, 223, 30, 0.2);
+        }
+    </style>
+</head>
+<body class="text-slate-200">
+
+    <!-- Loading Screen -->
+    <div id="loading" class="loading-overlay">
+        <div class="text-center">
+            <div class="relative w-20 h-20 mx-auto mb-6">
+                <div class="absolute inset-0 border-4 border-yellow-500/20 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p class="text-xl font-semibold tracking-wide animate-pulse">Loading JS Engine...</p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="h-16 border-b border-slate-800/60 flex items-center justify-between px-8 bg-slate-950/50 backdrop-blur-md">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-[#f7df1e] rounded-xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
+                <span class="text-black font-black text-xl">JS</span>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">CodeNexus JS</h1>
+                <p class="text-[10px] uppercase tracking-[0.2em] text-yellow-500 font-bold">V8 Runtime Environment</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <button id="run-btn" class="bg-[#f7df1e] hover:bg-yellow-400 text-black font-bold py-2 px-8 rounded-lg transition-all flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                RUN CODE
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <div class="flex flex-col md:flex-row overflow-hidden" id="editor-container">
+        <!-- Editor Side -->
+        <div class="w-full md:w-3/5 h-full relative" id="editor-pane">
+            <div class="absolute top-4 right-4 z-10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter language-badge">
+                JavaScript ES6+
+            </div>
+        </div>
+        
+        <!-- Console Side -->
+        <div class="w-full md:w-2/5 h-full flex flex-col bg-[#010409] border-l border-slate-800/50">
+            <div class="px-6 py-3 bg-slate-900/40 border-b border-slate-800/50 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
+                    <span class="text-xs font-bold uppercase tracking-widest text-slate-400">Console Output</span>
+                </div>
+                <button id="clear-btn" class="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest border border-slate-800 px-2 py-1 rounded transition-all">Clear</button>
+            </div>
+            <div id="output" class="flex-1 p-6 overflow-auto console-output text-[13px] leading-relaxed">
+                <div class="text-slate-600 italic mb-4">// Ready for input...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let editor;
+        const runBtn = document.getElementById('run-btn');
+        const outputDiv = document.getElementById('output');
+        const clearBtn = document.getElementById('clear-btn');
+        const loadingOverlay = document.getElementById('loading');
+
+        const initialCode = `/**\n * Welcome to CodeNexus JS\n * Full Intellisense & V8 Runtime enabled\n */\n\nconst greet = (name) => {\n    console.log(\`Hello, \${name}! Ready to code?\`);\n};\n\ngreet("Developer");\n\n// Try creating an object\nconst info = {\n    language: "JavaScript",\n    status: "Awesome",\n    tools: ["Monaco", "Tailwind"]\n};\n\nconsole.log(info);`;
+
+        // Initialize Monaco Editor
+        require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+            editor = monaco.editor.create(document.getElementById('editor-pane'), {
+                value: initialCode,
+                language: 'javascript',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                fontSize: 15,
+                fontFamily: 'Fira Code',
+                lineHeight: 24,
+                minimap: { enabled: false },
+                padding: { top: 20 },
+                smoothScrolling: true,
+                cursorBlinking: "expand",
+                cursorSmoothCaretAnimation: "on"
+            });
+            loadingOverlay.style.display = 'none';
+        });
+
+        // Intercept Console
+        const originalLog = console.log;
+        console.log = function(...args) {
+            const output = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg
+            ).join(' ');
+            logToConsole(output, "info");
+            originalLog.apply(console, args);
+        };
+
+        function logToConsole(text, type = "info") {
+            const cleanText = text.toString().trim();
+            if (!cleanText) return;
+
+            const line = document.createElement('div');
+            line.className = "mb-2 animate-in fade-in slide-in-from-left-2 duration-300";
+            
+            let prefix = "";
+            let textColor = "text-slate-300";
+
+            if (type === "error") {
+                prefix = '<span class="text-red-500 font-bold mr-2">ERR</span>';
+                textColor = "text-red-400 bg-red-500/5 px-2 py-1 rounded border border-red-500/20";
+            } else if (type === "info") {
+                prefix = '<span class="text-yellow-500 font-bold mr-2">LOG</span>';
+            }
+
+            line.innerHTML = `${prefix}<span class="${textColor}">${cleanText}</span>`;
+            outputDiv.appendChild(line);
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+
+        function clearConsole() {
+            outputDiv.innerHTML = '<div class="text-slate-600 italic mb-4">// Logs cleared.</div>';
+        }
+
+        clearBtn.addEventListener('click', clearConsole);
+
+        runBtn.addEventListener('click', () => {
+            const code = editor.getValue();
+            
+            runBtn.disabled = true;
+            runBtn.classList.add('opacity-50', 'scale-95');
+            
+            try {
+                // Execute JS
+                new Function(code)();
+            } catch (err) {
+                logToConsole(err.message, "error");
+            } finally {
+                setTimeout(() => {
+                    runBtn.disabled = false;
+                    runBtn.classList.remove('opacity-50', 'scale-95');
+                }, 300);
+            }
+        });
+    </script>
+</body>
+</html>

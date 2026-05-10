@@ -7,134 +7,173 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap');
         
         body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top left, #1e293b, #0f172a);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0;
-            overflow: hidden;
+            color: white;
         }
 
         .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 2rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            width: 90%;
-            max-width: 500px;
-            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 95%;
+            max-width: 450px;
+            padding: 2.5rem;
             text-align: center;
         }
 
         .choice-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid transparent;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         .choice-btn:hover {
-            transform: scale(1.1);
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #6366f1;
         }
 
         .choice-btn:active {
             transform: scale(0.95);
         }
 
-        .result-badge {
-            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
         .hand-shake {
-            animation: shake 0.5s ease-in-out infinite;
+            animation: shake 0.4s ease-in-out infinite;
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-15px) rotate(-5deg); }
+            75% { transform: translateY(15px) rotate(5deg); }
         }
-    </style>
+
+        .winner-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            backdrop-filter: blur(8px);
+        }
+
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0px rgba(99, 102, 241, 0.4); }
+            100% { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); }
+        }
+    </style> 
 </head>
-<body>
+<body>  
 
     <div class="glass-card">
-        <h1 class="text-3xl font-800 text-gray-800 mb-2">Rock Paper Scissors</h1>
-        <p class="text-gray-500 mb-8 text-sm">First to 10 wins!</p>
+        <h1 class="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 mb-2">Epic RPS</h1>
+        <p class="text-gray-400 mb-8 text-sm font-medium tracking-widest uppercase">Target: 10 Points</p>
 
         <!-- Scoreboard -->
-        <div class="flex justify-between items-center bg-gray-100 rounded-2xl p-4 mb-8">
+        <div class="flex justify-between items-center bg-black/30 rounded-3xl p-6 mb-8 border border-white/5">
             <div class="text-center">
-                <p class="text-xs uppercase tracking-widest text-gray-400 font-bold">You</p>
-                <p id="user-score" class="text-4xl font-bold text-indigo-600">0</p>
+                <p class="text-xs uppercase tracking-widest text-indigo-300 font-bold mb-1">Player</p>
+                <p id="user-score" class="text-5xl font-black text-white">0</p>
             </div>
-            <div class="h-10 w-px bg-gray-300"></div>
+            <div class="h-12 w-px bg-white/10"></div>
             <div class="text-center">
-                <p class="text-xs uppercase tracking-widest text-gray-400 font-bold">CPU</p>
-                <p id="cpu-score" class="text-4xl font-bold text-red-500">0</p>
+                <p class="text-xs uppercase tracking-widest text-red-400 font-bold mb-1">CPU</p>
+                <p id="cpu-score" class="text-5xl font-black text-white">0</p>
             </div>
         </div>
 
         <!-- Game Display -->
-        <div class="relative h-40 flex items-center justify-around mb-8 border-y border-gray-100">
-            <div id="user-display" class="text-6xl">👊</div>
-            <div id="vs-text" class="text-xl font-black text-gray-300 italic">VS</div>
-            <div id="cpu-display" class="text-6xl">👊</div>
+        <div class="relative h-44 flex items-center justify-around mb-8 bg-white/5 rounded-2xl overflow-hidden">
+            <div id="user-display" class="text-7xl transition-all duration-300">✊</div>
+            <div class="flex flex-col items-center">
+                <span class="text-xs font-bold text-gray-500 mb-1">VS</span>
+                <div class="w-8 h-px bg-gray-700"></div>
+            </div>
+            <div id="cpu-display" class="text-7xl transition-all duration-300">✊</div>
         </div>
 
-        <div id="message" class="h-8 text-lg font-semibold mb-6 text-gray-700">
+        <div id="message" class="h-12 flex items-center justify-center text-lg font-semibold mb-8 text-gray-200">
             Choose your weapon!
         </div>
 
         <!-- Controls -->
-        <div class="flex justify-center gap-4">
-            <button onclick="play('rock')" class="choice-btn group flex flex-col items-center">
-                <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-3xl mb-2 group-hover:bg-amber-200">🪨</div>
-                <span class="text-xs font-bold text-gray-600 uppercase">Rock</span>
+        <div class="grid grid-cols-3 gap-4">
+            <button onclick="play('rock')" class="choice-btn group">
+                <div class="text-4xl mb-2">🌑</div>
+                <span class="text-xs font-bold text-gray-400 group-hover:text-white uppercase tracking-tighter">Rock</span>
             </button>
-            <button onclick="play('paper')" class="choice-btn group flex flex-col items-center">
-                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-3xl mb-2 group-hover:bg-blue-200">📄</div>
-                <span class="text-xs font-bold text-gray-600 uppercase">Paper</span>
+            <button onclick="play('paper')" class="choice-btn group">
+                <div class="text-4xl mb-2">📄</div>
+                <span class="text-xs font-bold text-gray-400 group-hover:text-white uppercase tracking-tighter">Paper</span>
             </button>
-            <button onclick="play('scissors')" class="choice-btn group flex flex-col items-center">
-                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-3xl mb-2 group-hover:bg-red-200">✂️</div>
-                <span class="text-xs font-bold text-gray-600 uppercase">Scissors</span>
+            <button onclick="play('scissors')" class="choice-btn group">
+                <div class="text-4xl mb-2">✂️</div>
+                <span class="text-xs font-bold text-gray-400 group-hover:text-white uppercase tracking-tighter">Scissors</span>
             </button>
         </div>
 
-        <button onclick="resetGame()" class="mt-8 text-gray-400 hover:text-gray-600 text-xs font-bold uppercase tracking-tighter">
-            <i class="fas fa-undo mr-1"></i> Reset Game
+        <button onclick="resetGame()" class="mt-10 text-gray-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest flex items-center justify-center mx-auto">
+            <i class="fas fa-rotate-left mr-2"></i> Reset Session
         </button>
+    </div>
+
+    <!-- Winner Modal -->
+    <div id="winner-modal" class="winner-modal">
+        <div class="bg-gray-900 p-10 rounded-[3rem] border border-white/10 text-center max-w-sm w-full mx-4">
+            <div id="winner-icon" class="text-8xl mb-6">🏆</div>
+            <h2 id="winner-text" class="text-3xl font-black mb-2 text-white">YOU WON!</h2>
+            <p class="text-gray-400 mb-8">What an amazing performance!</p>
+            <button onclick="resetGame()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-500/30 transition-all">
+                Play Again
+            </button>
+        </div>
     </div>
 
     <script>
         let userScore = 0;
         let cpuScore = 0;
+        let isPlaying = false;
         const choices = ['rock', 'paper', 'scissors'];
         const emojiMap = {
-            'rock': '👊',
-            'paper': '✋',
-            'scissors': '✌️'
+            'rock': '🌑',
+            'paper': '📄',
+            'scissors': '✂️'
         };
 
         function play(userChoice) {
+            if (isPlaying) return;
+            isPlaying = true;
+
             const userDisplay = document.getElementById('user-display');
             const cpuDisplay = document.getElementById('cpu-display');
             const messageEl = document.getElementById('message');
 
-            // Add shaking animation
+            // Reset displays to rock for animation
+            userDisplay.innerText = '✊';
+            cpuDisplay.innerText = '✊';
             userDisplay.classList.add('hand-shake');
             cpuDisplay.classList.add('hand-shake');
-            userDisplay.innerText = '👊';
-            cpuDisplay.innerText = '👊';
-            messageEl.innerText = "Wait for it...";
+            messageEl.innerText = "Rock... Paper... Scissors!";
+            messageEl.className = "h-12 flex items-center justify-center text-lg font-semibold mb-8 text-yellow-400";
 
             setTimeout(() => {
                 userDisplay.classList.remove('hand-shake');
@@ -148,7 +187,10 @@
                 const result = getResult(userChoice, cpuChoice);
                 updateScore(result);
                 displayMessage(result, userChoice, cpuChoice);
-            }, 600);
+                checkGameOver();
+                
+                isPlaying = false;
+            }, 700);
         }
 
         function getResult(user, cpu) {
@@ -166,36 +208,63 @@
         function updateScore(result) {
             if (result === 'win') {
                 userScore++;
-                document.getElementById('user-score').innerText = userScore;
+                const el = document.getElementById('user-score');
+                el.innerText = userScore;
+                el.classList.add('scale-125', 'text-green-400');
+                setTimeout(() => el.classList.remove('scale-125', 'text-green-400'), 300);
             } else if (result === 'lose') {
                 cpuScore++;
-                document.getElementById('cpu-score').innerText = cpuScore;
+                const el = document.getElementById('cpu-score');
+                el.innerText = cpuScore;
+                el.classList.add('scale-125', 'text-red-400');
+                setTimeout(() => el.classList.remove('scale-125', 'text-red-400'), 300);
             }
         }
 
         function displayMessage(result, user, cpu) {
             const messageEl = document.getElementById('message');
-            messageEl.classList.remove('result-badge');
-            void messageEl.offsetWidth; // Trigger reflow
-            messageEl.classList.add('result-badge');
+            messageEl.className = "h-12 flex items-center justify-center text-lg font-semibold mb-8 transition-all duration-300";
 
             if (result === 'win') {
-                messageEl.innerHTML = `<span class="text-green-500">You Win!</span> ${user} beats ${cpu}`;
+                messageEl.innerHTML = `<span class="text-green-400">Point for You!</span>`;
+                messageEl.classList.add('scale-110');
             } else if (result === 'lose') {
-                messageEl.innerHTML = `<span class="text-red-500">You Lose!</span> ${cpu} beats ${user}`;
+                messageEl.innerHTML = `<span class="text-red-400">Point for CPU!</span>`;
             } else {
-                messageEl.innerHTML = `<span class="text-gray-500">It's a Draw!</span> Both chose ${user}`;
+                messageEl.innerHTML = `<span class="text-gray-400">It's a Draw!</span>`;
+            }
+        }
+
+        function checkGameOver() {
+            if (userScore >= 10 || cpuScore >= 10) {
+                const modal = document.getElementById('winner-modal');
+                const winText = document.getElementById('winner-text');
+                const winIcon = document.getElementById('winner-icon');
+                
+                modal.style.display = 'flex';
+                if (userScore >= 10) {
+                    winText.innerText = "VICTORY!";
+                    winText.className = "text-3xl font-black mb-2 text-green-400";
+                    winIcon.innerText = "👑";
+                } else {
+                    winText.innerText = "DEFEAT!";
+                    winText.className = "text-3xl font-black mb-2 text-red-500";
+                    winIcon.innerText = "🤖";
+                }
             }
         }
 
         function resetGame() {
             userScore = 0;
             cpuScore = 0;
+            isPlaying = false;
             document.getElementById('user-score').innerText = '0';
             document.getElementById('cpu-score').innerText = '0';
             document.getElementById('message').innerText = "Choose your weapon!";
-            document.getElementById('user-display').innerText = '👊';
-            document.getElementById('cpu-display').innerText = '👊';
+            document.getElementById('message').className = "h-12 flex items-center justify-center text-lg font-semibold mb-8 text-gray-200";
+            document.getElementById('user-display').innerText = '✊';
+            document.getElementById('cpu-display').innerText = '✊';
+            document.getElementById('winner-modal').style.display = 'none';
         }
     </script>
 </body>

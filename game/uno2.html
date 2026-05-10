@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uno Ultimate - Fast 2P</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Outfit:wght@400;600;800&display=swap');
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        .hand-scroll-container {
+            width: 100%;
+            overflow-x: auto;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            min-height: 140px;
+            scrollbar-width: none;
+        }
+
+        .hand-inner {
+            display: flex;
+            gap: -25px;
+            margin: 0 auto;
+        }
+
+        .card {
+            width: 70px;
+            height: 105px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: white;
+            position: relative;
+            box-shadow: -3px 3px 8px rgba(0, 0, 0, 0.4);
+            transition: all 0.15s ease;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            flex-shrink: 0;
+            margin-left: -25px;
+            background-size: 200% 200%;
+        }
+
+        .card:first-child { margin-left: 0; }
+
+        .playable-card { cursor: pointer; }
+        .playable-card:hover { 
+            transform: translateY(-15px); 
+            z-index: 100 !important;
+            border-color: #fff;
+        }
+
+        .card-red { background: linear-gradient(135deg, #ef4444, #991b1b); }
+        .card-blue { background: linear-gradient(135deg, #3b82f6, #1e3a8a); }
+        .card-green { background: linear-gradient(135deg, #22c55e, #14532d); }
+        .card-yellow { background: linear-gradient(135deg, #eab308, #854d0e); }
+        .card-black { background: linear-gradient(135deg, #1e293b, #000); border-color: #fbbf24; color: #fbbf24;}
+
+        .play-zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .deck-pile {
+            width: 80px;
+            height: 110px;
+            background: #450a0a;
+            border-radius: 10px;
+            border: 2px solid #fca5a5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-family: 'Fredoka One';
+            color: #fef08a;
+            transform: rotate(-5deg);
+        }
+
+        .active-turn { 
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 0 50px rgba(255,255,255,0.05);
+        }
+
+        .inactive-turn { 
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(0.5);
+        }
+
+        .modal {
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #action-toast {
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- P2 (Kitsune Master) - Top -->
+    <div id="p2-area" class="flex flex-col items-center pt-2 transition-all duration-200">
+        <div class="px-4 py-1 rounded-full bg-blue-900/50 text-[11px] font-bold border border-blue-500/50 mb-1">
+            PLAYER 2: KITSUNE MASTER
+        </div>
+        <div class="hand-scroll-container">
+            <div id="p2-hand" class="hand-inner"></div>
+        </div>
+    </div>
+
+    <!-- Battle Center -->
+    <div class="play-zone">
+        <div id="action-toast" class="absolute top-1/4 scale-0 opacity-0 text-5xl font-black italic text-yellow-400 drop-shadow-lg z-50">UNO!</div>
+
+        <div class="flex items-center gap-12">
+            <!-- Draw Pile -->
+            <div onclick="handleDraw()" class="deck-pile shadow-xl hover:scale-105 transition-transform">
+                UNO
+            </div>
+
+            <!-- Current Card -->
+            <div class="flex flex-col items-center gap-3">
+                <div id="discard-pile" class="scale-110 shadow-2xl"></div>
+                <div id="color-indicator" class="h-1.5 w-16 rounded-full bg-white/20"></div>
+                <div id="turn-text" class="text-xs font-black tracking-widest uppercase">P1 TURN</div>
+            </div>
+        </div>
+
+        <!-- Stack Multiplier -->
+        <div id="stack-ui" class="hidden bg-red-600 px-3 py-1 rounded-lg text-xs font-black border-2 border-white animate-bounce">
+            STACK: +<span id="stack-val">0</span>
+        </div>
+    </div>
+
+    <!-- P1 (Dragon Master) - Bottom -->
+    <div id="p1-area" class="flex flex-col items-center pb-4 transition-all duration-200">
+        <div class="hand-scroll-container">
+            <div id="p1-hand" class="hand-inner"></div>
+        </div>
+        <div class="px-4 py-1 rounded-full bg-green-900/50 text-[11px] font-bold border border-green-500/50 mt-1">
+            PLAYER 1: DRAGON MASTER
+        </div>
+    </div>
+
+    <!-- Color Picker -->
+    <div id="color-modal" class="modal">
+        <div class="bg-slate-900 p-6 rounded-2xl border-2 border-white/10 grid grid-cols-2 gap-4">
+            <div onclick="pickColor('red')" class="w-20 h-20 bg-red-500 rounded-xl cursor-pointer hover:scale-105"></div>
+            <div onclick="pickColor('blue')" class="w-20 h-20 bg-blue-500 rounded-xl cursor-pointer hover:scale-105"></div>
+            <div onclick="pickColor('green')" class="w-20 h-20 bg-green-500 rounded-xl cursor-pointer hover:scale-105"></div>
+            <div onclick="pickColor('yellow')" class="w-20 h-20 bg-yellow-400 rounded-xl cursor-pointer hover:scale-105"></div>
+        </div>
+    </div>
+
+    <!-- Win Screen -->
+    <div id="win-modal" class="modal">
+        <div class="text-center">
+            <h1 id="winner-name" class="text-6xl font-black mb-6 italic"></h1>
+            <button onclick="location.reload()" class="bg-white text-black px-8 py-3 rounded-full font-black uppercase tracking-tighter">New Battle</button>
+        </div>
+    </div>
+
+    <script>
+        let deck = [], discard = [], p1Hand = [], p2Hand = [];
+        let currentTurn = 1, colorToMatch = '', valueToMatch = '', stack = 0;
+
+        function createDeck() {
+            const colors = ['red', 'blue', 'green', 'yellow'];
+            colors.forEach(c => {
+                for(let i=0; i<=9; i++) { 
+                    deck.push({c, v:i.toString()}); 
+                    if(i>0) deck.push({c, v:i.toString()});
+                }
+                ['Skip', 'Reverse', '+2'].forEach(a => { deck.push({c, v:a}); deck.push({c, v:a}); });
+            });
+            for(let i=0; i<4; i++) {
+                deck.push({c:'black', v:'Wild'});
+                deck.push({c:'black', v:'+4'});
+            }
+            deck.sort(() => Math.random() - 0.5);
+        }
+
+        function draw(amt, hand) {
+            for(let i=0; i<amt; i++) {
+                if(deck.length === 0) {
+                    const top = discard.pop();
+                    deck = [...discard].sort(() => Math.random() - 0.5);
+                    discard = [top];
+                }
+                if(deck.length > 0) hand.push(deck.pop());
+            }
+        }
+
+        function render() {
+            const p1 = document.getElementById('p1-hand');
+            const p2 = document.getElementById('p2-hand');
+            const disc = document.getElementById('discard-pile');
+            const turnText = document.getElementById('turn-text');
+            
+            p1.innerHTML = ''; p2.innerHTML = '';
+            
+            p1Hand.forEach((c, i) => p1.appendChild(createCardUI(c, i, 1)));
+            p2Hand.forEach((c, i) => p2.appendChild(createCardUI(c, i, 2)));
+
+            const top = discard[discard.length-1];
+            disc.innerHTML = '';
+            disc.appendChild(createCardUI(top, 0, 0));
+
+            document.getElementById('color-indicator').style.background = colorToMatch;
+            document.getElementById('p1-area').className = `flex flex-col items-center pb-4 ${currentTurn === 1 ? 'active-turn' : 'inactive-turn'}`;
+            document.getElementById('p2-area').className = `flex flex-col items-center pt-2 ${currentTurn === 2 ? 'active-turn' : 'inactive-turn'}`;
+            
+            turnText.textContent = currentTurn === 1 ? 'P1 TURN' : 'P2 TURN';
+            turnText.className = `text-xs font-black tracking-widest uppercase ${currentTurn === 1 ? 'text-green-400' : 'text-blue-400'}`;
+
+            const stackUI = document.getElementById('stack-ui');
+            if(stack > 0) {
+                stackUI.classList.remove('hidden');
+                document.getElementById('stack-val').textContent = stack;
+            } else {
+                stackUI.classList.add('hidden');
+            }
+
+            // Check Uno
+            if(p1Hand.length === 1) toast("P1: UNO!");
+            if(p2Hand.length === 1) toast("P2: UNO!");
+
+            // Check Win
+            if(p1Hand.length === 0) win("DRAGON MASTER");
+            if(p2Hand.length === 0) win("KITSUNE MASTER");
+        }
+
+        function createCardUI(card, index, owner) {
+            const div = document.createElement('div');
+            div.className = `card card-${card.c}`;
+            div.style.zIndex = index;
+            div.innerHTML = `<span class="text-[10px] absolute top-1 left-2">${card.v}</span><span class="text-2xl">${card.v === 'Skip' ? '⊘' : card.v === 'Reverse' ? '⇄' : card.v}</span>`;
+            
+            if(owner === currentTurn) {
+                if(isPlayable(card)) {
+                    div.classList.add('playable-card');
+                    div.onclick = () => play(index);
+                } else {
+                    div.style.opacity = '0.3';
+                }
+            }
+            return div;
+        }
+
+        function isPlayable(card) {
+            if(stack > 0) return card.v.includes('+');
+            return card.c === 'black' || card.c === colorToMatch || card.v === valueToMatch;
+        }
+
+        function play(idx) {
+            const hand = currentTurn === 1 ? p1Hand : p2Hand;
+            const card = hand.splice(idx, 1)[0];
+            discard.push(card);
+            
+            valueToMatch = card.v;
+            colorToMatch = card.c;
+
+            if(card.v === '+2') stack += 2;
+            if(card.v === '+4') stack += 4;
+
+            if(card.c === 'black') {
+                document.getElementById('color-modal').style.display = 'flex';
+            } else {
+                if(card.v !== 'Skip' && card.v !== 'Reverse') {
+                    currentTurn = currentTurn === 1 ? 2 : 1;
+                } else {
+                    toast("EXTRA TURN!");
+                }
+                render();
+            }
+        }
+
+        function handleDraw() {
+            const hand = currentTurn === 1 ? p1Hand : p2Hand;
+            draw(stack > 0 ? stack : 1, hand);
+            stack = 0;
+            currentTurn = currentTurn === 1 ? 2 : 1;
+            render();
+        }
+
+        function pickColor(c) {
+            colorToMatch = c;
+            document.getElementById('color-modal').style.display = 'none';
+            if(valueToMatch !== 'Skip' && valueToMatch !== 'Reverse') {
+                currentTurn = currentTurn === 1 ? 2 : 1;
+            }
+            render();
+        }
+
+        function toast(txt) {
+            const t = document.getElementById('action-toast');
+            t.textContent = txt;
+            t.classList.remove('scale-0', 'opacity-0');
+            t.classList.add('scale-100', 'opacity-100');
+            setTimeout(() => {
+                t.classList.add('scale-0', 'opacity-0');
+                t.classList.remove('scale-100', 'opacity-100');
+            }, 800);
+        }
+
+        function win(name) {
+            document.getElementById('winner-name').textContent = name + " WINS!";
+            document.getElementById('win-modal').style.display = 'flex';
+        }
+
+        createDeck();
+        draw(7, p1Hand);
+        draw(7, p2Hand);
+        const start = deck.pop();
+        discard.push(start);
+        colorToMatch = start.c === 'black' ? 'red' : start.c;
+        valueToMatch = start.v;
+        render();
+    </script>
+</body>
+</html>
